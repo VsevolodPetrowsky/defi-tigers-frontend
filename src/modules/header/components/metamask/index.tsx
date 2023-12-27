@@ -103,7 +103,7 @@ const MetaMask = () => {
   return (
     <>
       {walletAddress ? (
-        <Box sx={{ flexGrow: 0 }}>
+        <Box sx={{ flexGrow: 0}}>
           <Tooltip title="Open settings">
             <Box>
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>

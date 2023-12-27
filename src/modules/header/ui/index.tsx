@@ -4,7 +4,7 @@ import MetaMask from "../components/metamask";
 
 const Header = observer(() => {
   return (
-    <AppBar position="static" color="transparent">
+    <AppBar position="static" color="transparent" >
       <Toolbar>
         <Typography
           variant="h5"
