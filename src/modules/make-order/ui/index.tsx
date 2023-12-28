@@ -1,246 +1,155 @@
-import {
-  Button,
-  FormControl,
-  FormControlLabel,
-  FormLabel,
-  Radio,
-  RadioGroup,
-  TextField,
-} from "@mui/material";
+import { Button, CircularProgress } from "@mui/material";
 import { Contract } from "ethers";
-import { useEffect, useState } from "react";
-// import defaultProvider from "../../../abi/default-provider";
+import { ChangeEvent, SyntheticEvent, useEffect, useState } from "react";
 import walletProvider from "../../../abi/wallet-provider";
+import * as stylex from "@stylexjs/stylex";
+import RadioButton from "../../../shared/ui/radio-button";
+import Input from "../../../shared/ui/input";
+import { abi, tokenAbi } from "../../../abi/abi";
+import {
+  CONTRACT_ADDRESS,
+  TOKEN1_ADDRESS,
+  TOKEN2_ADDRESS,
+} from "../../../abi/addresses";
+import getPrice from "../../../helpers/get-price";
 
-type OrderType = {
+const styles = stylex.create({
+  form: {
+    padding: "50px 300px",
+    display: "flex",
+    flexDirection: "column",
+  },
+  text: {
+    fontFamily: `"Roboto","Helvetica","Arial",sans-serif`,
+    fontWeight: "500",
+    fontSize: "1.2rem",
+    lineHeight: "1.2",
+    letterSpacing: "0.0075em",
+    color: "#f8f8f8",
+    margin: "20px 0",
+  },
+  price: {
+    fontFamily: `"Roboto","Helvetica","Arial",sans-serif`,
+    fontWeight: "500",
+    fontSize: "1rem",
+    lineHeight: "1.2",
+    letterSpacing: "0.0075em",
+    color: "#f8f8f8",
+  },
+  radioWrapper: {
+    display: "flex",
+  },
+});
+
+interface OrderType {
   coin: "matic" | "eth";
   operation: "buy" | "sell";
   fee: 0.01 | 0.05 | 0.3 | 1;
-  amount: number;
-  strike: number;
-};
+  amount: string;
+  strike: string;
+}
 
-const MakeOrder = () => {
+interface ErrorsType {
+  amount?: string;
+  strike?: string;
+}
+
+interface Props {
+  showOrderList: () => void;
+}
+
+const MakeOrder = ({ showOrderList }: Props) => {
   const [order, setOrder] = useState<OrderType>({
     coin: "matic",
     operation: "buy",
     fee: 0.3,
-    amount: 100,
-    strike: 0,
+    amount: "",
+    strike: "",
   });
+  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+  const [orderLoading, setOrderLoading] = useState<boolean>(false);
+  const [errors, setErrors] = useState<ErrorsType>();
 
-  const abi = [
-    {
-      inputs: [],
-      name: "_currentTick",
-      outputs: [{ internalType: "int24", name: "", type: "int24" }],
-      stateMutability: "view",
-      type: "function",
-    },
-    {
-      inputs: [
-        { internalType: "uint256", name: "tokenId", type: "uint256" },
-        { internalType: "address", name: "token0", type: "address" },
-        { internalType: "address", name: "token1", type: "address" },
-        { internalType: "uint24", name: "fee", type: "uint24" },
-      ],
-      name: "_decreaseLiquidity",
-      outputs: [
-        { internalType: "uint256", name: "amount0", type: "uint256" },
-        { internalType: "uint256", name: "amount1", type: "uint256" },
-      ],
-      stateMutability: "nonpayable",
-      type: "function",
-    },
-    {
-      inputs: [],
-      name: "_tickSpacing",
-      outputs: [{ internalType: "int24", name: "", type: "int24" }],
-      stateMutability: "view",
-      type: "function",
-    },
-    {
-      inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
-      name: "collectAllFees",
-      outputs: [
-        { internalType: "uint256", name: "amount0", type: "uint256" },
-        { internalType: "uint256", name: "amount1", type: "uint256" },
-      ],
-      stateMutability: "nonpayable",
-      type: "function",
-    },
-    {
-      inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-      name: "deposits",
-      outputs: [
-        { internalType: "address", name: "owner", type: "address" },
-        { internalType: "uint128", name: "liquidity", type: "uint128" },
-        { internalType: "address", name: "token0", type: "address" },
-        { internalType: "address", name: "token1", type: "address" },
-      ],
-      stateMutability: "view",
-      type: "function",
-    },
-    {
-      inputs: [
-        { internalType: "address", name: "_token1", type: "address" },
-        { internalType: "address", name: "_token2", type: "address" },
-        { internalType: "uint256", name: "_amount0ToMint", type: "uint256" },
-        { internalType: "uint256", name: "_amount1ToMint", type: "uint256" },
-        { internalType: "uint24", name: "_poolFee", type: "uint24" },
-        { internalType: "int24", name: "_lowerTick", type: "int24" },
-        { internalType: "int24", name: "_upperTick", type: "int24" },
-      ],
-      name: "mintNewPosition",
-      outputs: [
-        { internalType: "uint256", name: "tokenId", type: "uint256" },
-        { internalType: "uint128", name: "liquidity", type: "uint128" },
-        { internalType: "uint256", name: "amount0", type: "uint256" },
-        { internalType: "uint256", name: "amount1", type: "uint256" },
-      ],
-      stateMutability: "nonpayable",
-      type: "function",
-    },
-    {
-      inputs: [],
-      name: "nonfungiblePositionManager",
-      outputs: [
-        {
-          internalType: "contract NonfungiblePositionManager",
-          name: "",
-          type: "address",
-        },
-      ],
-      stateMutability: "view",
-      type: "function",
-    },
-    {
-      inputs: [
-        { internalType: "address", name: "operator", type: "address" },
-        { internalType: "address", name: "", type: "address" },
-        { internalType: "uint256", name: "tokenId", type: "uint256" },
-        { internalType: "bytes", name: "", type: "bytes" },
-      ],
-      name: "onERC721Received",
-      outputs: [{ internalType: "bytes4", name: "", type: "bytes4" }],
-      stateMutability: "nonpayable",
-      type: "function",
-    },
-    {
-      inputs: [],
-      name: "pool",
-      outputs: [{ internalType: "address", name: "", type: "address" }],
-      stateMutability: "view",
-      type: "function",
-    },
-    {
-      inputs: [],
-      name: "position",
-      outputs: [
-        {
-          internalType: "enum LiquidManager.Position",
-          name: "",
-          type: "uint8",
-        },
-      ],
-      stateMutability: "view",
-      type: "function",
-    },
-    {
-      inputs: [
-        { internalType: "bool", name: "_putOrCall", type: "bool" },
-        { internalType: "address", name: "_token1", type: "address" },
-        { internalType: "address", name: "_token2", type: "address" },
-        { internalType: "uint256", name: "_amount0ToMint", type: "uint256" },
-        { internalType: "uint256", name: "_amount1ToMint", type: "uint256" },
-        { internalType: "uint24", name: "_poolFee", type: "uint24" },
-        { internalType: "int24", name: "_price", type: "int24" },
-      ],
-      name: "putOrCall",
-      outputs: [],
-      stateMutability: "nonpayable",
-      type: "function",
-    },
-    {
-      inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
-      name: "retrieveNFT",
-      outputs: [],
-      stateMutability: "nonpayable",
-      type: "function",
-    },
-    {
-      inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-      name: "strikes",
-      outputs: [{ internalType: "int24", name: "", type: "int24" }],
-      stateMutability: "view",
-      type: "function",
-    },
-    {
-      inputs: [
-        { internalType: "address", name: "token0", type: "address" },
-        { internalType: "address", name: "token1", type: "address" },
-        { internalType: "uint24", name: "fee", type: "uint24" },
-      ],
-      name: "takePoolInfo",
-      outputs: [],
-      stateMutability: "nonpayable",
-      type: "function",
-    },
-  ];
+  useEffect(() => {
+    (async () => {
+      setCurrentPrice(null);
+      try {
+        const signer = await walletProvider.getSigner();
 
-  // const primitives = new Contract(
-  //   import.meta.env.VITE_LIQUID_MANAGER_ADDRESS,
-  //   abi,
-  //   defaultProvider
-  // );
+        const primitivesWithSigner = new Contract(
+          CONTRACT_ADDRESS,
+          abi,
+          signer
+        );
+        const currentSqrtPrice =
+          await primitivesWithSigner.getCurrentSqrtPriceX96(
+            TOKEN1_ADDRESS,
+            TOKEN2_ADDRESS,
+            Number(order.fee) * 10000
+          );
+        setCurrentPrice(getPrice(currentSqrtPrice));
+      } catch (error) {
+        console.log(error);
+      }
+    })();
+  }, [order.operation, order.coin, order.fee]);
 
-  const maticAddress = "0x779877A7B0D9E8603169DdbD7836e478b4624789";
-  const ethAddress = "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14";
+  const makeNewOrder = async (e: SyntheticEvent) => {
+    e.preventDefault();
 
-  // useEffect(() => {
-  //   (async () => {
-  //     try {
-  //       const signer = await walletProvider.getSigner();
+    if (order.amount === "" || order.strike === "") {
+      if (order.amount === "" && order.strike === "") {
+        setErrors({ strike: "Required!", amount: "Required!" });
+        return;
+      }
+      if (order.amount === "") {
+        setErrors(
+          errors ? { ...errors, amount: "Required!" } : { amount: "Required!" }
+        );
+        return;
+      }
+      if (order.strike === "") {
+        setErrors(
+          errors ? { ...errors, strike: "Required!" } : { strike: "Required!" }
+        );
+        return;
+      }
+    }
 
-  //       console.log(signer);
-
-  //       const primitivesWithSigner = new Contract(
-  //         '0x2BE98E087df773F3a19b1F5837d66Dda17114a34',
-  //         abi,
-  //         signer
-  //       );
-  //       const poolInfo = await primitivesWithSigner.takePoolInfo(
-  //         token1,
-  //         token2,
-  //         order.fee * 10000
-  //       );
-  //       const response = poolInfo.wait();
-  //       console.log(response);
-  //     } catch (error) {
-  //       console.log(error);
-  //     }
-  //   })();
-  // }, []);
-
-  const makeNewOrder = async () => {
+    // arguments for putOrCall function
     const putOrCall = order.operation === "buy" ? true : false;
-    const token1 = order.coin === "eth" ? ethAddress : maticAddress;
-    const token2 = maticAddress;
+    const token1 = order.coin === "eth" ? TOKEN1_ADDRESS : TOKEN2_ADDRESS;
+    const token2 = TOKEN2_ADDRESS;
     const amount0ToMint =
-      order.operation === "buy" ? BigInt(order.amount * 10 ** 18) : 2000;
+      order.operation === "buy"
+        ? BigInt(Number(order.amount) * 1e18)
+        : BigInt(100);
     const amount1ToMint =
-      order.operation === "sell" ? BigInt(order.amount * 10 ** 18) : 2000;
-    const poolFee = order.fee * 10000;
-    const price = order.strike;
+      order.operation === "sell"
+        ? BigInt(Number(order.amount) * 1e18)
+        : BigInt(100);
+    const poolFee = Number(order.fee) * 10000;
+    const price = Number(order.strike);
+    setOrderLoading(true);
 
     try {
       const signer = await walletProvider.getSigner();
 
-      const primitivesWithSigner = new Contract(
-        "0x2BE98E087df773F3a19b1F5837d66Dda17114a34",
-        abi,
-        signer
+      const approveToken1 = new Contract(TOKEN1_ADDRESS, tokenAbi, signer);
+      const approveToken2 = new Contract(TOKEN2_ADDRESS, tokenAbi, signer);
+
+      const approve1 = await approveToken1.approve(
+        CONTRACT_ADDRESS,
+        BigInt(Number(order.amount) * 1e18)
       );
+      approve1.wait();
+      const approve2 = await approveToken2.approve(
+        CONTRACT_ADDRESS,
+        BigInt(Number(order.amount) * 1e18)
+      );
+      approve2.wait();
+
+      const primitivesWithSigner = new Contract(CONTRACT_ADDRESS, abi, signer);
       const tx = await primitivesWithSigner.putOrCall(
         putOrCall,
         token1,
@@ -250,99 +159,144 @@ const MakeOrder = () => {
         poolFee,
         price
       );
-      const response = tx.wait();
-      console.log(response);
+      tx.wait();
+      setOrderLoading(false);
+      showOrderList();
     } catch (error) {
+      setOrderLoading(false);
       console.log(error);
     }
   };
 
   return (
-    <FormControl sx={{ padding: "50px 300px" }}>
-      <FormLabel id="coins-label">Choose coin:</FormLabel>
-      <RadioGroup
-        row
-        aria-labelledby="coins-label"
-        name="coins-radio-buttons-group"
-      >
-        <FormControlLabel
-          onChange={() => setOrder({ ...order, coin: "matic" })}
+    <form {...stylex.props(styles.form)}>
+      <h6 {...stylex.props(styles.text)}>Choose coin:</h6>
+
+      <div {...stylex.props(styles.radioWrapper)}>
+        <RadioButton
+          name="coins-radio-buttons-group"
+          id="maticRadio"
           value="matic"
-          control={<Radio />}
-          label="Matic"
+          onChange={() => setOrder({ ...order, coin: "matic" })}
+          checked={order.coin === "matic"}
+          text="Matic"
         />
-        <FormControlLabel
-          onChange={() => setOrder({ ...order, coin: "eth" })}
+        <RadioButton
+          name="coins-radio-buttons-group"
+          id="ethRadio"
           value="eth"
-          control={<Radio />}
-          label="Etherium"
+          onChange={() => setOrder({ ...order, coin: "eth" })}
+          checked={order.coin === "eth"}
+          text="Etherium"
         />
-      </RadioGroup>
-      <FormLabel id="operation-label" sx={{ mt: "20px" }}>
-        Choose operation:
-      </FormLabel>
-      <RadioGroup
-        row
-        aria-labelledby="operation-label"
-        name="operation-radio-buttons-group"
-      >
-        <FormControlLabel
-          onChange={() => setOrder({ ...order, operation: "sell" })}
+      </div>
+
+      <h6 {...stylex.props(styles.text)}>Choose operation:</h6>
+
+      <div {...stylex.props(styles.radioWrapper)}>
+        <RadioButton
+          name="operation-radio-buttons-group"
+          id="sellRadio"
           value="sell"
-          control={<Radio />}
-          label="Sell"
+          onChange={() => setOrder({ ...order, operation: "sell" })}
+          checked={order.operation === "sell"}
+          text="Sell"
         />
-        <FormControlLabel
-          onChange={() => setOrder({ ...order, operation: "buy" })}
+        <RadioButton
+          name="operation-radio-buttons-group"
+          id="buyRadio"
           value="buy"
-          control={<Radio />}
-          label="Buy"
+          onChange={() => setOrder({ ...order, operation: "buy" })}
+          checked={order.operation === "buy"}
+          text="Buy"
         />
-      </RadioGroup>
+      </div>
 
-      <RadioGroup
-        row
-        aria-labelledby="fee-label"
-        name="fee-radio-buttons-group"
-      >
-        <FormControlLabel
-          onChange={() => setOrder({ ...order, fee: 0.01 })}
+      <h6 {...stylex.props(styles.text)}>Choose the fee:</h6>
+
+      <div {...stylex.props(styles.radioWrapper)}>
+        <RadioButton
+          name="fee-radio-buttons-group"
+          id="0.01Radio"
           value="0.01"
-          control={<Radio />}
-          label="0.01"
+          onChange={() => setOrder({ ...order, fee: 0.01 })}
+          checked={order.fee === 0.01}
+          text="0.01%"
         />
-        <FormControlLabel
-          onChange={() => setOrder({ ...order, fee: 0.05 })}
+        <RadioButton
+          name="fee-radio-buttons-group"
+          id="0.05Radio"
           value="0.05"
-          control={<Radio />}
-          label="0.05"
+          onChange={() => setOrder({ ...order, fee: 0.05 })}
+          checked={order.fee === 0.05}
+          text="0.05%"
         />
-        <FormControlLabel
-          onChange={() => setOrder({ ...order, fee: 0.3 })}
+        <RadioButton
+          name="fee-radio-buttons-group"
+          id="0.3Radio"
           value="0.3"
-          control={<Radio />}
-          label="0.3"
+          onChange={() => setOrder({ ...order, fee: 0.3 })}
+          checked={order.fee === 0.3}
+          text="0.3%"
         />
-        <FormControlLabel
-          onChange={() => setOrder({ ...order, fee: 1 })}
+        <RadioButton
+          name="fee-radio-buttons-group"
+          id="1Radio"
           value="1"
-          control={<Radio />}
-          label="1"
+          onChange={() => setOrder({ ...order, fee: 1 })}
+          checked={order.fee === 1}
+          text="1%"
         />
-      </RadioGroup>
+      </div>
 
-      <TextField sx={{ mt: "20px" }} label="Amount USDC" variant="outlined" />
+      <h6 {...stylex.props(styles.text)}>Current price:</h6>
+      <p {...stylex.props(styles.price)}>
+        {currentPrice !== null ? currentPrice : "Calculating.."}
+      </p>
 
-      <TextField sx={{ mt: "20px" }} label="Strike price" variant="outlined" />
+      <h6 {...stylex.props(styles.text)}>Enter amount in USDC:</h6>
+
+      <Input
+        name="Amount USDC"
+        type="text"
+        placeholder="Amount USDC"
+        value={order.amount}
+        error={errors?.amount}
+        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+          setErrors({});
+          const value = e.target.value
+            .replace(/[^\d.,]/g, "")
+            .replace(/,/g, ".");
+          setOrder({ ...order, amount: value });
+        }}
+      />
+
+      <h6 {...stylex.props(styles.text)}>Enter a strike price:</h6>
+
+      <Input
+        name="Strike price"
+        type="text"
+        placeholder="Strike price"
+        value={order.strike}
+        error={errors?.strike}
+        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+          setErrors({});
+          const value = e.target.value
+            .replace(/[^\d.,]/g, "")
+            .replace(/,/g, ".");
+          setOrder({ ...order, strike: value });
+        }}
+      />
 
       <Button
-        sx={{ mt: "20px" }}
+        sx={{ mt: "40px" }}
         variant="outlined"
-        onClick={() => makeNewOrder()}
+        onClick={(e) => makeNewOrder(e)}
+        disabled={orderLoading}
       >
-        Make new order
+        {orderLoading ? <CircularProgress /> : "Make new order"}
       </Button>
-    </FormControl>
+    </form>
   );
 };
 
