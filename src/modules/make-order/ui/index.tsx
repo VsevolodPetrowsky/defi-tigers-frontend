@@ -129,7 +129,8 @@ const MakeOrder = ({ showOrderList }: Props) => {
         ? BigInt(Number(order.amount) * 1e18)
         : BigInt(100);
     const poolFee = Number(order.fee) * 10000;
-    const price = Number(order.strike);
+    const price = BigInt((Number(order.strike) ** (1/2)) * 2 ** 96);
+    console.log(price);
     setOrderLoading(true);
 
     try {
@@ -179,7 +180,7 @@ const MakeOrder = ({ showOrderList }: Props) => {
           value="matic"
           onChange={() => setOrder({ ...order, coin: "matic" })}
           checked={order.coin === "matic"}
-          text="Matic"
+          text="MATIC"
         />
         <RadioButton
           name="coins-radio-buttons-group"
@@ -187,7 +188,7 @@ const MakeOrder = ({ showOrderList }: Props) => {
           value="eth"
           onChange={() => setOrder({ ...order, coin: "eth" })}
           checked={order.coin === "eth"}
-          text="Etherium"
+          text="WETH"
         />
       </div>
 
@@ -254,12 +255,12 @@ const MakeOrder = ({ showOrderList }: Props) => {
         {currentPrice !== null ? currentPrice : "Calculating.."}
       </p>
 
-      <h6 {...stylex.props(styles.text)}>Enter amount in USDC:</h6>
+      <h6 {...stylex.props(styles.text)}>Enter amount:</h6>
 
       <Input
-        name="Amount USDC"
+        name="Amount"
         type="text"
-        placeholder="Amount USDC"
+        placeholder="Amount"
         value={order.amount}
         error={errors?.amount}
         onChange={(e: ChangeEvent<HTMLInputElement>) => {
