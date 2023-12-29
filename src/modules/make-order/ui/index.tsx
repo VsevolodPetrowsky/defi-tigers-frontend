@@ -10,6 +10,7 @@ import {
   CONTRACT_ADDRESS,
   TOKEN1_ADDRESS,
   TOKEN2_ADDRESS,
+  TOKEN3_ADDRESS,
 } from "../../../abi/addresses";
 import getPrice from "../../../helpers/get-price";
 
@@ -83,8 +84,8 @@ const MakeOrder = ({ showOrderList }: Props) => {
         );
         const currentSqrtPrice =
           await primitivesWithSigner.getCurrentSqrtPriceX96(
-            TOKEN1_ADDRESS,
-            TOKEN2_ADDRESS,
+            order.coin === "eth" ? TOKEN2_ADDRESS : TOKEN1_ADDRESS,
+            TOKEN3_ADDRESS,
             Number(order.fee) * 10000
           );
         setCurrentPrice(getPrice(currentSqrtPrice));
@@ -118,8 +119,8 @@ const MakeOrder = ({ showOrderList }: Props) => {
 
     // arguments for putOrCall function
     const putOrCall = order.operation === "buy" ? true : false;
-    const token1 = order.coin === "eth" ? TOKEN1_ADDRESS : TOKEN2_ADDRESS;
-    const token2 = TOKEN2_ADDRESS;
+    const token1 = order.coin === "eth" ? TOKEN2_ADDRESS : TOKEN1_ADDRESS;
+    const token2 = TOKEN3_ADDRESS;
     const amount0ToMint =
       order.operation === "buy"
         ? BigInt(Number(order.amount) * 1e18)
@@ -129,7 +130,7 @@ const MakeOrder = ({ showOrderList }: Props) => {
         ? BigInt(Number(order.amount) * 1e18)
         : BigInt(100);
     const poolFee = Number(order.fee) * 10000;
-    const price = BigInt((Number(order.strike) ** (1/2)) * 2 ** 96);
+    const price = BigInt(Number(order.strike) ** (1 / 2) * 2 ** 96);
     setOrderLoading(true);
 
     try {
@@ -137,17 +138,29 @@ const MakeOrder = ({ showOrderList }: Props) => {
 
       const approveToken1 = new Contract(TOKEN1_ADDRESS, tokenAbi, signer);
       const approveToken2 = new Contract(TOKEN2_ADDRESS, tokenAbi, signer);
+      const approveToken3 = new Contract(TOKEN3_ADDRESS, tokenAbi, signer);
 
-      const approve1 = await approveToken1.approve(
+      if (order.coin === "matic") {
+        const approve1 = await approveToken1.approve(
+          CONTRACT_ADDRESS,
+          BigInt(Number(order.amount) * 1e18)
+        );
+        approve1.wait();
+      }
+
+      if (order.coin === "eth") {
+        const approve2 = await approveToken2.approve(
+          CONTRACT_ADDRESS,
+          BigInt(Number(order.amount) * 1e18)
+        );
+        approve2.wait();
+      }
+
+      const approve3 = await approveToken3.approve(
         CONTRACT_ADDRESS,
         BigInt(Number(order.amount) * 1e18)
       );
-      approve1.wait();
-      const approve2 = await approveToken2.approve(
-        CONTRACT_ADDRESS,
-        BigInt(Number(order.amount) * 1e18)
-      );
-      approve2.wait();
+      approve3.wait();
 
       const primitivesWithSigner = new Contract(CONTRACT_ADDRESS, abi, signer);
       const tx = await primitivesWithSigner.putOrCall(

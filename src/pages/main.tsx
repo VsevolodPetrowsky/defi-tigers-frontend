@@ -46,7 +46,7 @@ const MainPage = observer(() => {
           <Box sx={{ width: "1000px", bgcolor: "#010409" }}>
             <Tabs value={value} onChange={handleChange} centered>
               <Tab label="Make new order" sx={{ color: "#1976d2" }} />
-              <Tab label="My orders list" sx={{ color: "#1976d2" }} />
+              <Tab label="My active orders list" sx={{ color: "#1976d2" }} />
             </Tabs>
           </Box>
           <Box

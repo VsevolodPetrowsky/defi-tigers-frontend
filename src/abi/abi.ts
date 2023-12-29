@@ -122,6 +122,13 @@ export const abi = [
     type: "function",
   },
   {
+    inputs: [{ internalType: "uint160", name: "_price", type: "uint160" }],
+    name: "getTickfromFrontPrice",
+    outputs: [{ internalType: "int24", name: "", type: "int24" }],
+    stateMutability: "pure",
+    type: "function",
+  },
+  {
     inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     name: "jobs",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
@@ -155,6 +162,21 @@ export const abi = [
     type: "function",
   },
   {
+    inputs: [
+      { internalType: "address", name: "", type: "address" },
+      { internalType: "uint256", name: "", type: "uint256" },
+    ],
+    name: "myOrders",
+    outputs: [
+      { internalType: "address", name: "owner", type: "address" },
+      { internalType: "uint128", name: "liquidity", type: "uint128" },
+      { internalType: "address", name: "token0", type: "address" },
+      { internalType: "address", name: "token1", type: "address" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [],
     name: "nonfungiblePositionManager",
     outputs: [
@@ -177,6 +199,18 @@ export const abi = [
     name: "onERC721Received",
     outputs: [{ internalType: "bytes4", name: "", type: "bytes4" }],
     stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    name: "orders",
+    outputs: [
+      { internalType: "address", name: "owner", type: "address" },
+      { internalType: "uint128", name: "liquidity", type: "uint128" },
+      { internalType: "address", name: "token0", type: "address" },
+      { internalType: "address", name: "token1", type: "address" },
+    ],
+    stateMutability: "view",
     type: "function",
   },
   {
