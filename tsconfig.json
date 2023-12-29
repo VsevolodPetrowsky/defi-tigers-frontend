@@ -20,6 +20,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
+  "include": ["src", "src/shared/ui/radio-button"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

@@ -1,7 +1,7 @@
 import { makeAutoObservable } from "mobx";
 
 class UserStore {
-  address: null | string = localStorage.getItem("userAddress");
+  address: null | string = null;
 
   constructor() {
     makeAutoObservable(this);
