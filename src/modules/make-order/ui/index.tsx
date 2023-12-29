@@ -130,7 +130,6 @@ const MakeOrder = ({ showOrderList }: Props) => {
         : BigInt(100);
     const poolFee = Number(order.fee) * 10000;
     const price = BigInt((Number(order.strike) ** (1/2)) * 2 ** 96);
-    console.log(price);
     setOrderLoading(true);
 
     try {
