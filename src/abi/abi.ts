@@ -163,6 +163,26 @@ export const abi = [
   },
   {
     inputs: [
+      { internalType: "address", name: "_token1", type: "address" },
+      { internalType: "address", name: "_token2", type: "address" },
+      { internalType: "uint256", name: "_amount0ToMint", type: "uint256" },
+      { internalType: "uint256", name: "_amount1ToMint", type: "uint256" },
+      { internalType: "uint24", name: "_poolFee", type: "uint24" },
+      { internalType: "int24", name: "_lowerTick", type: "int24" },
+      { internalType: "int24", name: "_upperTick", type: "int24" },
+    ],
+    name: "mintNewPosition",
+    outputs: [
+      { internalType: "uint256", name: "tokenId", type: "uint256" },
+      { internalType: "uint128", name: "liquidity", type: "uint128" },
+      { internalType: "uint256", name: "amount0", type: "uint256" },
+      { internalType: "uint256", name: "amount1", type: "uint256" },
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
       { internalType: "address", name: "", type: "address" },
       { internalType: "uint256", name: "", type: "uint256" },
     ],
